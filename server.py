@@ -2,12 +2,12 @@ import socket
 import sys
 import image_analyzer
 IA = image_analyzer.image_analyzer()
-print "Initialized Caffe-based Image Analyzer"
+
 try:
   s = socket.socket()
   s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
   host = '127.0.0.1'
-  port = 7777
+  port = 6666
   s.bind((host, port))
   s.listen(5)
   while True:
