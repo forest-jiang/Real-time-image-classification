@@ -9,7 +9,7 @@ from client_util import *
 
 analyze_interval = 1000 # analyze image every certain interval (in milliseconds)
 VIDEO_WINSIZE = (640, 480)
-host,port = '127.0.0.1', 9001
+host,port = '127.0.0.1', 6666
 send_lock = threading.Lock()
 arr = []
 depth = []
@@ -18,11 +18,9 @@ def display():
     global arr, depth, send_lock
     while (True):
         if send_lock.acquire():
-            (depth,_),(rgb,_)=get_depth(),get_video()
-            #arr = np.dstack((rgb[:,:,0].T,rgb[:,:,1].T,rgb[:,:,2].T))
-            arr=rgb
+            (depth,_),(arr,_)=get_depth(),get_video()
             d3 = np.dstack((depth,depth,depth)).astype(np.uint8)
-            da = np.hstack((d3,rgb))
+            da = np.hstack((d3,arr))
             cv.ShowImage('both',cv.fromarray(np.array(da[::2,::2,::-1])))
             send_lock.release()
         cv.WaitKey(5)
@@ -35,7 +33,7 @@ def main():
     t.start()
     while (True):
         if send_lock.acquire(): 
-            print arr.shape 
+            print arr.shape # note that in client_util, arr is transposed
             print depth.shape 
             connectAndSendArr3d(host, port, arr)            
             send_lock.release()
