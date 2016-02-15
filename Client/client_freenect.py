@@ -1,66 +1,45 @@
-import pygame
-import thread
+import cv
 #import easygui
 from freenect import sync_get_depth as get_depth, sync_get_video as get_video
+import frame_convert
+from time import sleep
+import threading
 import numpy as np
 from client_util import *
 
 analyze_interval = 1000 # analyze image every certain interval (in milliseconds)
 VIDEO_WINSIZE = (640, 480)
-host,port = '127.0.0.1', 6666
-screen = None
-screen_lock = thread.allocate()
-dosend = False
-s=None
+host,port = '127.0.0.1', 9001
+send_lock = threading.Lock()
+arr = []
+depth = []
 
-def video_frame_ready(frame):
-	with screen_lock:
-		frame.image.copy_bits(screen._pixels_address)
-		arr3d = pygame.surfarray.pixels3d(screen)
-		
-		global dosend
-		if dosend:
-			data = connectAndSendArr3d(host, port, arr3d)
-			print arr3d.shape
-			dosend = False
-			if data:
-				for itm in data:
-					
-					box = tuple(num*100 for num in itm[1:])
-					print "box",box
-					pygame.draw.rect(screen,(0,0,0),box,0)
-				
-
-		pygame.display.update()
-
+def display():
+    global arr, depth, send_lock
+    while (True):
+        if send_lock.acquire():
+            (depth,_),(rgb,_)=get_depth(),get_video()
+            #arr = np.dstack((rgb[:,:,0].T,rgb[:,:,1].T,rgb[:,:,2].T))
+            arr=rgb
+            d3 = np.dstack((depth,depth,depth)).astype(np.uint8)
+            da = np.hstack((d3,rgb))
+            cv.ShowImage('both',cv.fromarray(np.array(da[::2,::2,::-1])))
+            send_lock.release()
+        cv.WaitKey(5)
+    
+# Main game loop
 def main():
-	# 's' key for save, 'q' key for quit
-	"""Initialize and run the game"""
-	pygame.init()
-	global s
-	s=0
-	global arr
-	arr = []
-	pygame.time.set_timer(pygame.USEREVENT,analyze_interval)
-	# Initialize PyGame
-	global screen,dosend
-	screen = pygame.display.set_mode(VIDEO_WINSIZE, 0, 32)
+    global arr, depth, send_lock
+    t = threading.Thread(target=display)
+    t.daemon = True
+    t.start()
+    while (True):
+        if send_lock.acquire(): 
+            print arr.shape 
+            print depth.shape 
+            connectAndSendArr3d(host, port, arr)            
+            send_lock.release()
+            sleep(1)
 
-	pygame.display.set_caption("PyKinect Video Example")
-
-	angle = 0
-	with nui.Runtime() as kinect:
-		kinect.video_frame_ready += video_frame_ready
-		kinect.video_stream.open(nui.ImageStreamType.Video, 2, nui.ImageResolution.Resolution640x480, nui.ImageType.Color)		
-		# Main game loop
-		while (True):
-			event = pygame.event.wait()
-			if event.type == pygame.USEREVENT:
-				dosend = True
-			if event.type == pygame.KEYUP and event.key==pygame.K_q:
-				break
-			if (event == pygame.QUIT):
-				break
-			
 if (__name__ == "__main__"):
 	main()
