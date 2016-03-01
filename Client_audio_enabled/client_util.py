@@ -9,18 +9,16 @@ from shutil import copyfile
 
 def play(data):
   fileid = np.random.randint(0,1000)
-  #unity_file= ".\location_sound_" + str(fileid)+".txt"
-  unity_file= "..\..\Pieces\BinauralSoundGenerator\win32\location_sound.txt"
+  unity_file= ".\location_sound_" + str(fileid)+".txt"
+  #unity_file= "..\..\Pieces\BinauralSoundGenerator\win32\location_sound.txt"
   KINECT_HORIZONTAL_FIELD = 57 # field of view in degrees
   KINECT_VERTICAL_FIELD = 43 # field of view in degrees
   KINECT_HORIZONTAL_TAN = 0.54295 # tan(57/2 deg)
   KINECT_VERTICAL_TAN = 0.3939 # tan(43/2 deg)
-  distance = 2  #depth in meters 
-  z_factor = 0.5
+  distance = 1  #z-depth in meters 
+  z_factor = 1 #0.5
   if data:
     with open(unity_file+'tmp','w') as f:
-      #f.write("0,0,1,20\n") # a dummy record. For strange reason, 3DCeption doesn't matter if only one record
-      f.write("0,0,0,") # for i++ bug only
       for ob in data:
         iclass = ob[0][0]
         x,y,w,h=ob[1],ob[2],ob[3],ob[4]
@@ -28,17 +26,11 @@ def play(data):
         x = (x-0.5) * 2 * distance * KINECT_HORIZONTAL_TAN # left right need to be reversed (because kinect image is reversed)
         y = (y-0.5) * 2 * distance * KINECT_VERTICAL_TAN
         z = distance * z_factor
-        #str_to_unity = ','.join(map(str,(x,y,z,iclass[0])))+'\n'
-        str_to_unity = str(iclass[0])+'\n'+','.join(map(str,(x,y,z))) +',' # for i++ bug
-      
+        str_to_unity = ','.join(map(str,(x,y,z,iclass[0])))+'\n'
         #print str_to_unity
         f.write(str_to_unity)
-      f.write(str(20)+'\n')
-    copyfile(unity_file+'tmp', unity_file)
+    #copyfile(unity_file+'tmp', unity_file)
     print "file written:"
-	 
-	 
-   #res.append((classes,x,y,w,h))
    
    
 def sendData(so, string):
