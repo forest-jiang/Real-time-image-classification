@@ -1,5 +1,7 @@
 import cv
 import cv2
+import math
+import numpy as py
 
 #import easygui
 
@@ -16,11 +18,39 @@ analyze_interval = 1000 # analyze image every certain interval (in milliseconds)
 VIDEO_WINSIZE = (640, 480)
 host,port = '127.0.0.1', 9001
 # send_lock = threading.Lock()
-arr = []
+dst = np.zeros((720,1280,3),dtype=np.uint8)
 depth = []
 
+def get_map(height,width):	
+    FOV = 3.141592654; # FOV of the fisheye, eg: 180 degrees
+        
+    # Polar angles
+    theta = 3.14159265 * (np.array(xrange(width))*1.0/width - 0.5); # -pi/2 to pi/2
+    phi = 3.14159265 * (np.array(xrange(height))*1.0/height - 0.5); # -pi/2 to pi/2
 
+    # Vector in 3D space
+    psph_x = np.outer(np.cos(phi),np.sin(theta));
+    psph_y = np.outer(np.cos(phi),np.cos(theta));
+    psph_z = np.outer(np.sin(phi),np.ones(theta.shape));
 
+    # Calculate fisheye angle and radius
+    theta = np.arctan2(psph_z,psph_x);
+    phi = np.arctan2(np.sqrt(psph_x*psph_x+psph_z*psph_z),psph_y);
+    r = 0.9*width * phi / FOV;
+
+    # Pixel in fisheye space
+    pfish_x = 0.5 * width + r * np.cos(theta);
+    pfish_y = 0.5 * width + r * np.sin(theta);
+    
+    map_x=pfish_x.astype('float32')
+    map_y=pfish_y.astype('float32')
+    return map_x,map_y
+
+def process(img,map_x,map_y):
+    global dst
+    dst[:,0:640,:]=cv2.remap(img[:,0:640,:],map_x,map_y,cv2.INTER_LINEAR)
+    dst[:,640:,:]=cv2.remap(img[:,640:,:],map_x,map_y,cv2.INTER_LINEAR)
+    
 # def display():
 #     global arr, depth, send_lock
 #     while (True):
@@ -46,17 +76,19 @@ def main():
     #         send_lock.release()
     #         sleep(1)
 
-    cap = cv2.VideoCapture(0)
+    cap = cv2.VideoCapture(1)
+    ret, frame = cap.read()
+    H, W = frame.shape[:2]
+    map_x, map_y = get_map(720 ,W/2)
+    global dst
+    
     while(True):
-
         # Capture frame-by-frame
         ret, frame = cap.read()
-        # Our operations on the frame come here
-        # gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-
-
+        process(frame,map_x,map_y)
+    
         # Display the resulting frame
-        cv2.imshow('frame',frame)
+        cv2.imshow('frame',dst)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 
