@@ -90,7 +90,8 @@ def main():
     while(True):
         # Capture frame-by-frame
         ret, frame = cap.read()
-        dst = process(frame,map_x,map_y)
+        #dst = process(frame,map_x,map_y)
+        dst = frame
 
         resized = cv2.resize(dst,VIDEO_WINSIZE)
 
