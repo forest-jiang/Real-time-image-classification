@@ -1,13 +1,14 @@
-git clone https://github.com/pjreddie/darknet.git
-cd darknet
-sed 's/GPU=0/GPU=1/g' Makefile
-
-make -j8
+### start.sh
 
 
+### download weights
+cd darknet/weights
+aria2c http://pjreddie.com/media/files/yolo.weights
 
-# Real-time-image-classification
 
-Real time image classification using Kinect and a server with GPU enabled
+### change your ~/.bashrc
 
--- I will upload the code once got my computer restamped.
+export CUDA_HOME=/usr/local/cuda-7.5
+export LD_LIBRARY_PATH=${CUDA_HOME}/lib64
+export PATH=${CUDA_HOME}/bin:${PATH}
+
