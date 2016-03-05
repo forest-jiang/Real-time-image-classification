@@ -10,7 +10,7 @@ import socket
 
 NUM_CLASSES = 20
 triggered = [time.time()]*NUM_CLASSES
-COOL_DOWN_TIME = 1 # 1 second cool down time for each class
+COOL_DOWN_TIME = 1.5 # 1.5 second cool down time for each class
 
 def estimate_distance(w,h):
     """Estimate distance from the box sizes
@@ -45,6 +45,7 @@ class signal_analyzer(object):
           sendstrs.append("%g,%g,%g,%d"%(xs,ys,zs,o))
         so = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         so.connect((host, port))
+        print "send...",sendstrs
         so.sendall("\n".join(sendstrs)) # use so.sendall to send to Unity game, not send_one_message
         so.close()
 
