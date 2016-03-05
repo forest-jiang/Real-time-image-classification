@@ -94,9 +94,8 @@ def main():
 
         # elif cv2.waitKey(1) & 0xFF == ord('s'):
             # print frame.shape
-        a = np.asarray(frame)
             # print a 
-        data = connectAndSendArr3d(host, port, cv2.resize(a,VIDEO_WINSIZE))
+        data = connectAndSendArr3d(host, port, cv2.resize(dst,VIDEO_WINSIZE))
             
 
     # When everything done, release the capture
