@@ -28,13 +28,13 @@ class yolo_detector(object):
         img_name = self.yolo_watch_path+"%d.jpg" % img_id
         im = Image.open(BytesIO(base64.b64decode(img_data)))
         im.save(img_name)
-        
+
         resultfile = self.yolo_watch_path + "%d.jpg.txt" %img_id
         while not os.path.isfile(resultfile):
           time.sleep(0.05)
         with open(resultfile) as f:
           ann = f.readlines()
-        
+
         res = []
         #print "start parsing...", ann
         for entry in ann:
@@ -51,5 +51,5 @@ class yolo_detector(object):
           #print "box str:", boxstr
           x,y,w,h = [float(s) for s in boxstr.split(' ') if s.strip()]
           res.append((classes,x,y,w,h))
-          return res
-   
+        return res
+

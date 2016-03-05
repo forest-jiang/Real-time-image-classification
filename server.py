@@ -1,42 +1,37 @@
 import socket
 import sys
 import image_analyzer
+import struct
 IA = image_analyzer.image_analyzer()
 
+def recvall(sock, count):
+    buf = b''
+    while count:
+        newbuf = sock.recv(count)
+        if not newbuf: return None
+        buf += newbuf
+        count -= len(newbuf)
+    return buf
+
+def recv_one_message(sock):
+    lengthbuf = recvall(sock, 4)
+    length, = struct.unpack('!I', lengthbuf)
+    return recvall(sock, length)
+
 try:
-  s = socket.socket()
-  s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-  host = '127.0.0.1'
-  port = 6666
-  s.bind((host, port))
-  s.listen(5)
-  while True:
-    c, addr = s.accept()
-    total = 0
-    totalReceive = ''
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    host = '127.0.0.1'
+    port = 6666
+    s.bind((host, port))
+    s.listen(5)
+
     while True:
-      try:
-        data = c.recv(1024)
-        if data and len(data) == 1024:
-          sys.stdout.write(':')
-          total += len(data)
-          totalReceive += data
-        else:
-          print '-breaking-', len(data)
-          total += len(data)
-          totalReceive += data
-          break
-      except socket.error, e:
-        print "errer",e
-        err = e.args[0]
-        if err == errno.EAGAIN or err == errno.EWOULDBLOCK:
-                print 'no more data'
-        break
-    print "One Image Received:", totalReceive[:10]+"   "+totalReceive[-10:], len(totalReceive)
-    c.send(IA.analyze(totalReceive))
-#    c.send('Thank you for connecting, you send ' + str(total) + ' to us')
-    c.close()                # Close the connection
+        c, addr = s.accept()
+        totalReceive = recv_one_message(c)
+        c.sendall(IA.analyze(totalReceive))
+        c.close()
 
 finally:
-  print "error, quit"
-  s.close()
+    print "error, quit"
+    s.close()

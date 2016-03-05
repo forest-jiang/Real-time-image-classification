@@ -477,7 +477,7 @@ void convert_print_yolo_detections(FILE *fp, float *predictions, int classes, in
 }
 
 void yolo_net_predict(network *pNet, char *imgfilename, char * resfile, float thresh){
-  detection_layer l = (*pNet).layers[(*pNet).n-1];
+  detection_layer l = pNet->layers[pNet->n-1];
   clock_t time;
   char buff[256];
   //    char *input = buff;
@@ -486,22 +486,25 @@ void yolo_net_predict(network *pNet, char *imgfilename, char * resfile, float th
   box *boxes = calloc(l.side*l.side*l.n, sizeof(box));
   float **probs = calloc(l.side*l.side*l.n, sizeof(float *));
   for(j = 0; j < l.side*l.side*l.n; ++j) probs[j] = calloc(l.classes, sizeof(float *));
+
   image im = load_image_color(imgfilename,0,0);
-  image sized = resize_image(im, (*pNet).w, (*pNet).h);
-  float *X = sized.data;
+  image resized = resize_image(im, pNet->w, pNet->h);
+  float *X = resized.data;
   time=clock();
   float *predictions = network_predict(*pNet, X);
   free_image(im);
   printf("%s: Predicted in %f seconds.\n", imgfilename, sec(clock()-time));
-  
+
   FILE *ofp = fopen(resfile, "w");
   if (ofp == NULL) {fprintf(stderr, "Can't open output file %s!\n",resfile); exit(1);}
-  
+
+  //convert_yolo_detections(predictions, l.classes, l.n, l.sqrt, l.side, 1, 1, demo_thresh, probs, boxes, 0);
+
   convert_print_yolo_detections(ofp, predictions, l.classes, l.n, l.sqrt, l.side, 1, 1, thresh, probs, boxes, 0);
   //if (nms) do_nms_sort(boxes, probs, l.side*l.side*l.n, l.classes, nms);
-  
+
   fclose(ofp);
-  
+
 }
 
 // YOLO file watcher
@@ -521,14 +524,14 @@ void run_yolo_watch(int argc, char **argv)
         fprintf(stderr, "usage: %s %s [watchpath] [cfg] [weights (optional)]\n", argv[0], argv[1]);
         return;
     }
-    
+
     char *watchpath = argv[2];
     char *cfg = argv[3];
     char *weights = (argc > 4) ? argv[4] : 0;
     char *filename = (argc > 5) ? argv[5]: 0;
     char watchimgfile[100];
     char resultfile[100];
-    
+
 //    if(0==strcmp(argv[2], "test")) test_yolo(cfg, weights, filename, thresh);
  //   else if(0==strcmp(argv[2], "train")) train_yolo(cfg, weights);
   //  else if(0==strcmp(argv[2], "valid")) validate_yolo(cfg, weights);
@@ -543,10 +546,10 @@ void run_yolo_watch(int argc, char **argv)
     }
     set_batch_network(&net, 1);
     srand(2222222);
-    
+
     printf("Finish loading...\n");
-  
-  
+
+
   // File watcher
     int str_len;
     int fileready=0;
@@ -565,30 +568,30 @@ void run_yolo_watch(int argc, char **argv)
 
     /*adding the “/tmp” directory into watch list. Here, the suggestion is to validate the existence of the directory before adding into monitoring list.*/
     wd = inotify_add_watch( fd, watchpath, IN_CREATE | IN_CLOSE_WRITE);
-  
+
   // ---------- main loop ----------------
   while (1){
     i=0;
-    
-    /*read to determine the event change happens on “/tmp” directory. Actually this read blocks until the change event occurs*/ 
-    length = read( fd, buffer, EVENT_BUF_LEN ); 
+
+    /*read to determine the event change happens on “/tmp” directory. Actually this read blocks until the change event occurs*/
+    length = read( fd, buffer, EVENT_BUF_LEN );
 
     /*checking for error*/
     if ( length < 0 ) {
       perror( "read" );
-    }  
+    }
     //printf("%d\n",length);
     /*actually read return the list of change events happens. Here, read the change event one by one and process it accordingly.*/
-    while ( i < length ) {     
+    while ( i < length ) {
       struct inotify_event *event = ( struct inotify_event * ) &buffer[ i ];
       if ( event->len ) {
-        if ( event->mask & (IN_CREATE | IN_CLOSE_WRITE) ) { //IN_CREATE | IN_MODIFY | 
+        if ( event->mask & (IN_CREATE | IN_CLOSE_WRITE) ) { //IN_CREATE | IN_MODIFY |
           if ( event->mask & IN_ISDIR ) {
             //printf( "New directory %s created.\n", event->name );
           }
           else {
             //printf( "New file %s created or modified.\n", event->name );
-            
+
             str_len = strlen(event->name);
             // Only care about .jpg files
             if (str_len <= 4 || strcmp(&(event->name[str_len-4]),".jpg") ){
