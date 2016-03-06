@@ -52,7 +52,7 @@ class signal_analyzer(object):
     self.cam_type = cam_type
     print cam_type+" camera is used"
     if cam_type=="fisheye":
-      self.FOV = (180,180)
+      self.FOV = (360,180)
     if cam_type=="logitech":
       self.FOV = (72,54)
     if cam_type=="gopro":
