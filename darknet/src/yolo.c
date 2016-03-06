@@ -440,7 +440,6 @@ void run_yolo(int argc, char **argv)
 }
 
 
-
 // Additional functions for filewatcher
 
 void convert_print_yolo_detections(FILE *fp, float *predictions, int classes, int num, int square, int side, int w, int h, float thresh, float **probs, box *boxes, int only_objectness)
@@ -507,6 +506,15 @@ void yolo_net_predict(network *pNet, char *imgfilename, char * resfile, float th
 
 }
 
+
+void demo_yolo_watch(char *cfgfile, char *weightfile, float thresh, int cam_index);
+#ifndef GPU
+void demo_yolo_watch(char *cfgfile, char *weightfile, float thresh, int cam_index)
+{
+    fprintf(stderr, "Darknet must be compiled with CUDA for YOLO demo.\n");
+}
+#endif
+
 // YOLO file watcher
 // argv: "darknet", "yolowatch" "imgfile" "resfile" "cfg" "weights"
 void run_yolo_watch(int argc, char **argv)
@@ -529,100 +537,88 @@ void run_yolo_watch(int argc, char **argv)
     char *cfg = argv[3];
     char *weights = (argc > 4) ? argv[4] : 0;
     char *filename = (argc > 5) ? argv[5]: 0;
+
+
     char watchimgfile[100];
     char resultfile[100];
 
-//    if(0==strcmp(argv[2], "test")) test_yolo(cfg, weights, filename, thresh);
- //   else if(0==strcmp(argv[2], "train")) train_yolo(cfg, weights);
-  //  else if(0==strcmp(argv[2], "valid")) validate_yolo(cfg, weights);
-   // else if(0==strcmp(argv[2], "recall")) validate_yolo_recall(cfg, weights);
-    //else if(0==strcmp(argv[2], "demo")) demo_yolo(cfg, weights, thresh, cam_index);
-
     printf("watchpath: %s\n",watchpath);
-    printf("Loading net...\n");
-    network net = parse_network_cfg(cfg);
-    if(weights){
-        load_weights(&net, weights);
-    }
-    set_batch_network(&net, 1);
-    srand(2222222);
 
-    printf("Finish loading...\n");
+    demo_yolo_watch(cfg, weights, thresh, cam_index);
 
+  // // File watcher
+  //   int str_len;
+  //   int fileready=0;
+  //   int length;
+  //   int fd;
+  //   int wd;
+  //   char buffer[EVENT_BUF_LEN];
 
-  // File watcher
-    int str_len;
-    int fileready=0;
-    int length;
-    int fd;
-    int wd;
-    char buffer[EVENT_BUF_LEN];
+  //   /*creating the INOTIFY instance*/
+  //   fd = inotify_init();
 
-    /*creating the INOTIFY instance*/
-    fd = inotify_init();
+  //   /*checking for error*/
+  //   if ( fd < 0 ) {
+  //     perror( "inotify_init" );
+  //   }
 
-    /*checking for error*/
-    if ( fd < 0 ) {
-      perror( "inotify_init" );
-    }
+  //   /*adding the “/tmp” directory into watch list. Here, the suggestion is to validate the existence of the directory before adding into monitoring list.*/
+  //   wd = inotify_add_watch( fd, watchpath, IN_CREATE | IN_CLOSE_WRITE);
 
-    /*adding the “/tmp” directory into watch list. Here, the suggestion is to validate the existence of the directory before adding into monitoring list.*/
-    wd = inotify_add_watch( fd, watchpath, IN_CREATE | IN_CLOSE_WRITE);
+  // // ---------- main loop ----------------
+  // while (1){
+  //   i=0;
 
-  // ---------- main loop ----------------
-  while (1){
-    i=0;
+  //   /*read to determine the event change happens on “/tmp” directory. Actually this read blocks until the change event occurs*/
+  //   length = read( fd, buffer, EVENT_BUF_LEN );
 
-    /*read to determine the event change happens on “/tmp” directory. Actually this read blocks until the change event occurs*/
-    length = read( fd, buffer, EVENT_BUF_LEN );
+  //   /*checking for error*/
+  //   if ( length < 0 ) {
+  //     perror( "read" );
+  //   }
+  //   //printf("%d\n",length);
+  //   /*actually read return the list of change events happens. Here, read the change event one by one and process it accordingly.*/
+  //   while ( i < length ) {
+  //     struct inotify_event *event = ( struct inotify_event * ) &buffer[ i ];
+  //     if ( event->len ) {
+  //       if ( event->mask & (IN_CREATE | IN_CLOSE_WRITE) ) { //IN_CREATE | IN_MODIFY |
+  //         if ( event->mask & IN_ISDIR ) {
+  //           //printf( "New directory %s created.\n", event->name );
+  //         }
+  //         else {
+  //           //printf( "New file %s created or modified.\n", event->name );
 
-    /*checking for error*/
-    if ( length < 0 ) {
-      perror( "read" );
-    }
-    //printf("%d\n",length);
-    /*actually read return the list of change events happens. Here, read the change event one by one and process it accordingly.*/
-    while ( i < length ) {
-      struct inotify_event *event = ( struct inotify_event * ) &buffer[ i ];
-      if ( event->len ) {
-        if ( event->mask & (IN_CREATE | IN_CLOSE_WRITE) ) { //IN_CREATE | IN_MODIFY |
-          if ( event->mask & IN_ISDIR ) {
-            //printf( "New directory %s created.\n", event->name );
-          }
-          else {
-            //printf( "New file %s created or modified.\n", event->name );
+  //           str_len = strlen(event->name);
+  //           // Only care about .jpg files
+  //           if (str_len <= 4 || strcmp(&(event->name[str_len-4]),".jpg") ){
+  //             //printf("Expect .jpg file: %s\n",event->name);
+  //           }
+  //           else{
+  //             printf("%d\n",i);
+  //             //if (event->mask & IN_CREATE) {printf("File %s, created.%d\n",event->name,fileready); fileready = 1;}
+  //             //if (event->mask & IN_CLOSE_WRITE ) {printf("File %s, closed for writing. %d\n",event->name,fileready);}
+  //             if (event->mask & IN_CREATE) fileready = 1;
+  //             if (fileready && (event->mask & IN_CLOSE_WRITE)){
+  //               // object detection on image
+  //               strcpy(watchimgfile, watchpath);
+  //               strcat(watchimgfile, event->name);
+  //               strcpy(resultfile, watchimgfile);
+  //               strcat(resultfile, ".txt");
+  //               yolo_net_predict(&net, watchimgfile, resultfile, thresh);
+  //               fileready=0;
+  //             }
+  //           }
+  //         }
+  //       }
+  //     }
+  //     i += EVENT_SIZE + event->len;
+  //   } // while ( i < length )
+  // }
+  //   /*removing the “/tmp” directory from the watch list.*/
+  //   inotify_rm_watch( fd, wd );
 
-            str_len = strlen(event->name);
-            // Only care about .jpg files
-            if (str_len <= 4 || strcmp(&(event->name[str_len-4]),".jpg") ){
-              //printf("Expect .jpg file: %s\n",event->name);
-            }
-            else{
-              printf("%d\n",i);
-              //if (event->mask & IN_CREATE) {printf("File %s, created.%d\n",event->name,fileready); fileready = 1;}
-              //if (event->mask & IN_CLOSE_WRITE ) {printf("File %s, closed for writing. %d\n",event->name,fileready);}
-              if (event->mask & IN_CREATE) fileready = 1;
-              if (fileready && (event->mask & IN_CLOSE_WRITE)){
-                // object detection on image
-                strcpy(watchimgfile, watchpath);
-                strcat(watchimgfile, event->name);
-                strcpy(resultfile, watchimgfile);
-                strcat(resultfile, ".txt");
-                yolo_net_predict(&net, watchimgfile, resultfile, thresh);
-                fileready=0;
-              }
-            }
-          }
-        }
-      }
-      i += EVENT_SIZE + event->len;
-    } // while ( i < length )
-  }
-    /*removing the “/tmp” directory from the watch list.*/
-    inotify_rm_watch( fd, wd );
-
-    /*closing the INOTIFY instance*/
-    close( fd );
+  //   /*closing the INOTIFY instance*/
+  //   close( fd );
 
 
 }

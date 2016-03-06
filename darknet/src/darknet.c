@@ -23,7 +23,7 @@ extern void run_classifier(int argc, char **argv);
 extern void run_char_rnn(int argc, char **argv);
 
 extern void run_yolo_watch(int argc, char **argv);
-  
+
 void change_rate(char *filename, float scale, float add)
 {
     // Ready for some weird shit??
@@ -46,13 +46,13 @@ void average(int argc, char *argv[])
     network net = parse_network_cfg(cfgfile);
     network sum = parse_network_cfg(cfgfile);
 
-    char *weightfile = argv[4];   
+    char *weightfile = argv[4];
     load_weights(&sum, weightfile);
 
     int i, j;
     int n = argc - 5;
     for(i = 0; i < n; ++i){
-        weightfile = argv[i+5];   
+        weightfile = argv[i+5];
         load_weights(&net, weightfile);
         for(j = 0; j < net.n; ++j){
             layer l = net.layers[j];
@@ -225,7 +225,7 @@ int main(int argc, char **argv)
         average(argc, argv);
     } else if (0 == strcmp(argv[1], "yolo")){
         run_yolo(argc, argv);
-    } else if (0 == strcmp(argv[1], "yolowatch")){
+    } else if (0 == strcmp(argv[1], "yolo_watch")){
         run_yolo_watch(argc, argv);
     } else if (0 == strcmp(argv[1], "rnn")){
         run_char_rnn(argc, argv);
@@ -275,8 +275,8 @@ void hello_world(){
     printf("This is my string: %s\n", my_string);
 }
 
-    
-    
+
+
 void receive_string(char * my_string){
     printf("This is my string: %s\n", my_string);
 }
