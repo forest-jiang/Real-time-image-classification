@@ -19,6 +19,10 @@ if __name__ == "__main__":
     so.connect((host, port))
     so.sendall('-0.00088603,0.00330505,0.47932,7')
     so.close()
+    so = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    so.connect((host, port))
+    so.sendall('-1,0.00330505,0.47932,17')
+    so.close()
     for i in range(0,12):
         time.sleep(0.59)
         x,z = 2*np.cos( np.radians(i*30) ) ,10*np.sin( np.radians(i*30) )

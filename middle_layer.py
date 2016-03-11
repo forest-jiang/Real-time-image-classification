@@ -1,11 +1,15 @@
 import socket
-import sys
 import struct
-import SignalAnalyzer
 import time
-import os
+import os, sys, logging
+
+import SignalAnalyzer
 
 cam_type = "logitech"
+cam_type = "gopro"
+#cam_type = "ricoh"
+
+
 def recvall(sock, count):
     buf = b''
     while count:
@@ -26,7 +30,8 @@ def recv_one_message(sock):
 # car 6 0.266080 0.505038 0.504032 0.962252 0.904232;
 # tvmonitor 19 0.206442 0.091263 0.508923 0.181008 0.689912;tvmonitor 19 0.887895 0.484474 0.673417 0.707561 0.655528;
 # format: name, class id, probability, x, y, w, h
-thres = 0.4
+thres = 0.2
+correct_missed00 = False # sometimes the SoundGenerator failed to load the first wav file...
 
 try:
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -35,10 +40,11 @@ try:
     port = 5554
     s.bind((host, port))
     s.listen(5)
-    sa = SignalAnalyzer.signal_analyzer(cam_type)
+    sa = SignalAnalyzer.signal_analyzer(cam_type,correct_missed00)
     count = 0
     print "listener ready"
     c, addr = s.accept()
+    #logging.basicConfig(filename='log'+repr(time.time()),level=logging.DEBUG )
     while True:
         count += 1
         #print count # debug use
@@ -50,7 +56,11 @@ try:
         for objstr in totalReceive.split(';')[:-1]:
             name,objid,prob,x,y,w,h = objstr.split(' ')
             prob,x,y,w,h = map(float,(prob,x,y,w,h))
-            objid = int(objid)-1
+            if correct_missed00:
+                objid = int(objid)-1
+            else:
+                objid = int(objid)
+
             if prob >= thres:
                 objects.append((objid,prob,name,x,y,w,h))
         #print totalReceive, objects, "analyze..."
@@ -60,6 +70,8 @@ try:
         #c.sendall(sendback)
         #c.close()
     c.close()
+except Exception:
+    print sys.exc_info()[0]
 finally:
     print "error, quit"
     s.close()
