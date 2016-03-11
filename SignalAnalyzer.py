@@ -49,12 +49,11 @@ def estimate_distance(w,h):
 
 class signal_analyzer(object):
   def __init__(self, cam_type,correct_missed_wav=False):
-  	allowable_objs = set([1,4,6,8,10,14,15,17,19])
-	allowable_objs = set([4,8,10,14,15,17,19])
-	# seems that linux game has problem loading the first sound file: 00.wav, so the number is shifted...
-	if correct_missed_wav:
-		allowable_objs = set( i-1 for i in allowable_objs )
-
+    self.allowable_objs = set([1,4,6,8,10,14,15,17,19])
+    self.allowable_objs = set([4,8,10,14,15,17,19])
+    # seems that linux game has problem loading the first sound file: 00.wav, so the number is shifted...
+    if correct_missed_wav:
+        self.allowable_objs = set( i-1 for i in self.allowable_objs )
     self.yolo = None #yolo.yolo_detector()
     self.cam_type = cam_type
     print cam_type+" camera is used"
@@ -76,7 +75,7 @@ class signal_analyzer(object):
     # for each type of object, make sure time is passed cool down time before send to the unity game
     objs = set(obj[0] for obj in objs_data)
     for o_type in objs:
-      if o_type not in allowable_objs:
+      if o_type not in self.allowable_objs:
         print "ignore:", o_type,names[o_type]
         triggered[o_type] = time.time()
       if time.time() - triggered[o_type] > COOL_DOWN_TIME:

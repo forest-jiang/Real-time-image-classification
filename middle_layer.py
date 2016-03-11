@@ -6,7 +6,7 @@ import os, sys, logging
 import SignalAnalyzer
 
 cam_type = "logitech"
-cam_type = "gopro"
+#cam_type = "gopro"
 #cam_type = "ricoh"
 
 
